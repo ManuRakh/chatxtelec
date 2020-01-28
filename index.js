@@ -199,6 +199,8 @@ function toServerMess(socket)
 
 function addMessageToHistory(current_room, role, author, message,request,time)
 {
+
+		MongoDb.addMessageToDb(mongoClient, current_room, message);//добавляем запись в бд
 		roomsHistory[current_room].push({
 			role:role,
 			author:author,
@@ -206,6 +208,7 @@ function addMessageToHistory(current_room, role, author, message,request,time)
 			request:request,
 			time:time
 		});
+
 	
 }
 function disconnect(socket)
