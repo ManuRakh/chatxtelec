@@ -1,20 +1,21 @@
 var express = require('express');
 //const {MongoClient} = require('mongodb');
 var app = express();
-var url;
-
-var MongoClient = require('mongodb').MongoClient;
-MongoDb = require("./mongodb/connect.js"); //проверка подключения к бд, и получение рабочего Url для дальнейших действий
-url = MongoDb.getConnectionUrl(app, MongoClient, url);
-console.log(url);
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 bodyParser = require('body-parser'),
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 require("./routes")(app, __dirname); //находится в папке routes в файле index.js
-	// const newsJSON = require(__dirname + '/admins/index.json');
-
+// const newsJSON = require(__dirname + '/admins/index.json');
+//===========================Настройка соединения с MongoDb========================================
+const MongoClient = require('mongodb').MongoClient;
+var url;
+const MongoDb = require("./mongodb/mongodb.js"); //проверка подключения к бд, и получение рабочего Url для дальнейших действий
+url = MongoDb.getConnectionUrl(url);//получение url
+const mongoClient = new MongoClient(url,{useUnifiedTopology: true, useNewUrlParser: true}); //соединение с MongoDb и создание переменной для дальнейших действий с БД
+console.log(url);
+//===========================Конец Настройки========================================
 // Отслеживание порта
 server.listen(3000, console.log("чат для сервера запущен")); //к примеру для входа используется localhost:3000
 //===========================******************========================================

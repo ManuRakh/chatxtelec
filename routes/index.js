@@ -12,11 +12,11 @@ module.exports = function (app, dirname) {
 			res.send();
 		});
 	});
-	// 	app.get('/', urlencodedParser, function(request, respons) { //клиентская часть
-	// 	// respons.setHeader('Access-Control-Allow-Origin', '*');
-	// 	// respons.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
+		app.get('/', urlencodedParser, function(request, respons) { //клиентская часть
+		// respons.setHeader('Access-Control-Allow-Origin', '*');
+		// respons.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
 
-	// 	respons.sendFile(dirname + '/public/index.html');
-	// });
+		respons.sendFile(dirname + '/public/index.html');
+	});
 
 };
