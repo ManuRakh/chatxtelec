@@ -1,15 +1,18 @@
 var express = require('express');
+//const {MongoClient} = require('mongodb');
 var app = express();
+var url;
+
+var MongoClient = require('mongodb').MongoClient;
+MongoDb = require("./mongodb/connect.js"); //проверка подключения к бд, и получение рабочего Url для дальнейших действий
+url = MongoDb.getConnectionUrl(app, MongoClient, url);
+console.log(url);
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 bodyParser = require('body-parser'),
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
-
-
-  
-var routes = require("./routes")(app, __dirname); //находится в папке routes в файле index.js
-
+require("./routes")(app, __dirname); //находится в папке routes в файле index.js
 	// const newsJSON = require(__dirname + '/admins/index.json');
 
 // Отслеживание порта
@@ -23,6 +26,8 @@ var roomsHistory = []//первый элемент с именем комнат�
 var usersInfo = [];
 try{
 	workWithSockets(); //основная серверная часть со всеми операциями
+	const uri = "mongodb+srv://<manucher5160@gmail.com>:<password>@<your-cluster-url>/test?retryWrites=true&w=majority";
+
 }
 catch(exception)
 {
