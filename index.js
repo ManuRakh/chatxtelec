@@ -1,5 +1,4 @@
 var express = require('express');
-//const {MongoClient} = require('mongodb');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
@@ -7,7 +6,7 @@ bodyParser = require('body-parser'),
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 require("./routes")(app, __dirname); //находится в папке routes в файле index.js
-// const newsJSON = require(__dirname + '/admins/index.json');
+
 //===========================Настройка соединения с MongoDb========================================
 const MongoClient = require('mongodb').MongoClient;
 var url;
@@ -16,6 +15,7 @@ url = MongoDb.getConnectionUrl(url);//получение url
 const mongoClient = new MongoClient(url,{useUnifiedTopology: true, useNewUrlParser: true}); //соединение с MongoDb и создание переменной для дальнейших действий с БД
 console.log(url);
 //===========================Конец Настройки========================================
+
 // Отслеживание порта
 server.listen(3000, console.log("чат для сервера запущен")); //к примеру для входа используется localhost:3000
 //===========================******************========================================
@@ -28,12 +28,11 @@ var usersInfo = [];
 try{
 	workWithSockets(); //основная серверная часть со всеми операциями
 	const uri = "mongodb+srv://<manucher5160@gmail.com>:<password>@<your-cluster-url>/test?retryWrites=true&w=majority";
-
-}
+	}
 catch(exception)
-{
+	{
 	console.log("error" + exception);
-}
+	}
 //===========================******************========================================
 
 function workWithSockets()
@@ -166,12 +165,11 @@ function switchRoom(socket)
 
 function showMessagesHistory(socket) //показывает историю сообщений
 {
-		roomsHistory[socket.room].forEach(element => { //получить массив сообщений от юзера в данной комнате  
-			io.sockets["in"](socket.room).emit('MESS_FROM_HISTORY', {
-				message: element, 
-			}
-			);
+	roomsHistory[socket.room].forEach(element => { //получить массив сообщений от юзера в данной комнате  
+		io.sockets["in"](socket.room).emit('MESS_FROM_HISTORY', {
+			message: element, 
 		});
+	});
 	
 }
 function toServerMess(socket)
@@ -185,6 +183,7 @@ function toServerMess(socket)
 		rooms.unshift(data.current_room); //ставит комнату в самый верх списка комнат
 		}
 		io.sockets.emit('UPDATE_ROOMS', rooms, undefined);
+		console.log(data.current_room + " "+ data.role + " "+ data.author + " "+ data.message + " "+ data.request + " "+ data.time)
 		addMessageToHistory(data.current_room, data.role, data.author, data.message, data.request,data.time);//добавит сообщение в историю
 		io.sockets["in"](data.current_room).emit('TO_CHAT_MESS', {
 			role: data.role, 
@@ -199,17 +198,14 @@ function toServerMess(socket)
 
 function addMessageToHistory(current_room, role, author, message,request,time)
 {
-
-		MongoDb.addMessageToDb(mongoClient, current_room, message);//добавляем запись в бд
-		roomsHistory[current_room].push({
-			role:role,
-			author:author,
-			message:message,
-			request:request,
-			time:time
-		});
-
-	
+	MongoDb.addMessageToDb(mongoClient, current_room, role, author, message,request,time);//добавляем запись в бд
+	roomsHistory[current_room].push({
+		role:role,
+		author:author,
+		message:message,
+		request:request,
+		time:time
+	});
 }
 function disconnect(socket)
 {
