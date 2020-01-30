@@ -10,7 +10,7 @@ exports.disconnect=  function(socket)
     socket.on('disconnect', function(data) {
 	});
 }
-exports.switchRoom = function(socket)
+exports.switchRoom = function(socket, io)
 {
     socket.on('SWITCH_ROOM', function(newroom) { //функция для изменения текущей комнаты
         var oldroom;
@@ -24,7 +24,7 @@ exports.switchRoom = function(socket)
         socket.room = newroom;
         socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
         socket.emit('UPDATE_ROOMS', rooms, newroom);
-        messages_functions.showMessagesHistory(socket);//показывает историю сообщений
+        messages_functions.showMessagesHistory(socket, newroom, io);//показывает историю сообщений
         socket.emit('USER-INFO',...usersInfo[newroom]);
         });
 }

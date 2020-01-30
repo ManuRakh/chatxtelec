@@ -1,5 +1,4 @@
 var express = 		require('express');
-//const {MongoClient} = require('mongodb');
 var app = express();
 var server = 		require('http').createServer(app);
 var io = 			require('socket.io').listen(server);
@@ -16,11 +15,10 @@ server.listen(3000, console.log("чат для сервера запущен"));
 //===========================******************========================================
 
 //Глобальные Массивы со всеми подключениями
-const rooms_functions =require("./main_functions/rooms.js"); 
+const rooms_functions = require("./main_functions/rooms.js"); 
 
 try{
 	workWithSockets(); //основная серверная часть со всеми операциями
-	const uri = "mongodb+srv://<manucher5160@gmail.com>:<password>@<your-cluster-url>/test?retryWrites=true&w=majority";
 
 }
 catch(exception)
@@ -43,7 +41,7 @@ function workWithSockets()
 		rooms_functions.deleteRoom(socket);
 		//===========================******************========================================
 		// слушатель события "смена комнаты"
-		rooms_functions.switchRoom(socket);
+		rooms_functions.switchRoom(socket, io);
 		//===========================******************========================================
 		// // слушатель события "передача сообщения на сервер"
 		rooms_functions.toServerMess(socket, io);

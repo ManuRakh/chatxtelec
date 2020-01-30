@@ -56,8 +56,8 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
           else //если же записи обнаружены - обновляет историю сообщений добавлением нового в конец истории
             { 
                 console.log('Запись обнаружена, провожу обновление');
-                let endMessage =  results.msg + '\n' + message; //добавляет новую запись в конец старой
-                collection.updateOne({ author: current_room }, { $set: { msg: endMessage } }, (err, result) => { //обновляет запись
+                let endMessage =  results.msg + '\n'+author + ":" + message+":"+request; //добавляет новую запись в конец старой
+                collection.updateOne({ author: current_room }, { $set: { msg: endMessage, request: request  } }, (err, result) => { //обновляет запись
                 if (err) {
                   console.log('Не получилось обновить запись: ', err)
                   throw err
@@ -74,3 +74,25 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
   });
 }
 //===========================Конец добавления сообщения в БД========================================
+exports.showUserHistory = function(mongoClient, author, io, socket)
+{
+  mongoClient.connect(function (err, client) {
+    new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
+
+    const db = client.db(dbName);
+    const collection = db.collection("users");
+    if (err)
+      return console.log(err);
+      collection.findOne({author: author},(function (err, results) {
+      console.log(results);
+   
+  //    socket.broadcast.to(author).emit('MESS_FROM_HISTORY', {
+  //     message: results.msg, 
+  //  });
+   io.sockets["in"](author).emit('MESS_FROM_HISTORY', {
+    message: results.msg, 
+      });
+    }));
+  }).then(() => client.close());
+  });
+}

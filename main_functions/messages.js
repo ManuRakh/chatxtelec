@@ -5,13 +5,14 @@ const MongoDb = 	require("../mongodb/mongodb.js"); //проверка подкл
 url = MongoDb.getConnectionUrl(url);//получение url
 const mongoClient = new MongoClient(url,{useUnifiedTopology: true, useNewUrlParser: true}); //соединение с MongoDb и создание переменной для дальнейших действий с БД
 console.log(url);
-exports.showMessagesHistory = function(socket)
+exports.showMessagesHistory = function(socket, author, io)
 {
-    rooms_functions.roomsHistory[socket.room].forEach(element => { //получить массив сообщений от юзера в данной комнате  
-		io.sockets["in"](socket.room).emit('MESS_FROM_HISTORY', {
-			message: element, 
-		});
-	});
+    // rooms_functions.roomsHistory[socket.room].forEach(element => { //получить массив сообщений от юзера в данной комнате  
+	// 	io.sockets["in"](socket.room).emit('MESS_FROM_HISTORY', {
+	// 		message: element, 
+	// 	});
+	// });
+	MongoDb.showUserHistory(mongoClient, author, io, socket);
 	
 }
 
