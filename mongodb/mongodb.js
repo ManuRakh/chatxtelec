@@ -1,9 +1,9 @@
  //===========================Входные данные========================================
- const user = "db33ee0f23395f4a844c799146bb9a82";
- const dbName = "db33ee0f23395f4a844c799146bb9a82";
- const hostString = "9a.mongo.evennode.com:27017/db33ee0f23395f4a844c799146bb9a82";
- const mongoPassword = "Otdyhaem123";
- const replica = "?replicaSet=eu-9";
+ const user =           "db33ee0f23395f4a844c799146bb9a82";
+ const dbName =         "db33ee0f23395f4a844c799146bb9a82";
+ const hostString =     "9a.mongo.evennode.com:27017/db33ee0f23395f4a844c799146bb9a82";
+ const mongoPassword =  "Otdyhaem123";
+ const replica =        "?replicaSet=eu-9";
  //===========================Конец входных данных========================================
 
  
@@ -33,8 +33,9 @@ exports.showUsersTable = function(mongoClient) {
 
 
 //===========================Добавление сообщения в БД========================================
-exports.addMessageToDb = function(mongoClient, current_room, role, author, message,request,time)
+exports.addMessageToDb = function(mongoClient, current_room, role, author, message,request,time, operator)
 {
+
     mongoClient.connect(function (err, client) { //соединение с бд
     new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
         const db = client.db(dbName);
@@ -42,34 +43,13 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
         let msgHistory = { //массив с данными о сообщении
           role:     role, 
           author:   author, 
+          to_whom:  operator,
           msg:      author+":"+ message, 
           request:  request, 
           time:     time     
         };
-    collection.findOne({author: current_room},(function(err, results){       //ищет пользователя в БД по имени комнаты
-          console.log(results);
-          if(results=='' || results==null) //если записей не обнаружено - добавляет новую запись
-            {
-                console.log('Записей не обнаружено, создаю новую запись');
-                collection.insertOne(msgHistory);//добавление записи
-            }     
-          else //если же записи обнаружены - обновляет историю сообщений добавлением нового в конец истории
-            { 
-                console.log('Запись обнаружена, провожу обновление');
-                let endMessage =  results.msg + '\n'+author + ":" + message+":"+request; //добавляет новую запись в конец старой
-                collection.updateOne({ author: current_room }, { $set: { msg: endMessage, request: request  } }, (err, result) => { //обновляет запись
-                if (err) {
-                  console.log('Не получилось обновить запись: ', err)
-                  throw err
-                }
-                console.log('Запись обновлена');
-                console.log('Обновленная запись теперь выглядит так:');
-                console.log(endMessage);
-                console.log('Обновление завершено')
-      
-              });
-            }
-          }));
+        collection.insertOne(msgHistory);//добавление записи
+        console.log('Добавлено новое сообщение в бд')
     }).then(() => client.close());;
   });
 }
@@ -83,16 +63,13 @@ exports.show_mess_to_admin = function(mongoClient, author, io, socket)
     const collection = db.collection("users");
     if (err)
       return console.log(err);
-      collection.findOne({author: author},(function (err, results) {
-      console.log(results);
-   
-  //    socket.broadcast.to(author).emit('MESS_FROM_HISTORY', {
-  //     message: results.msg, 
-  //  });
-   io.sockets["in"](author).emit('MESS_TO_ADMIN', {
-    message: results.msg, 
+      collection.find({$or:[{author:author},{to_whom:author}]}, ).sort({ time: -1 }).toArray(function (err, results) {
+        //console.log(results);
+        start_sending_msgs(results, author, 'MESS_TO_ADMIN', io)
+
+       
+    
       });
-    }));
   }).then(() => client.close());
   });
 }
@@ -100,21 +77,32 @@ exports.show_mess_to_user = function(mongoClient, author, io, socket)
 {
   mongoClient.connect(function (err, client) {
     new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
-
+      let msgs = [];
     const db = client.db(dbName);
     const collection = db.collection("users");
     if (err)
       return console.log(err);
-      collection.findOne({author: author},(function (err, results) {
-      console.log(results);
-   
-  //    socket.broadcast.to(author).emit('MESS_FROM_HISTORY', {
-  //     message: results.msg, 
-  //  });
-   io.sockets["in"](author).emit('MESS_TO_USER', {
-    message: results.msg, 
-      });
-    }));
+
+      collection.find({$or:[{author:author},{to_whom:author}]}, ).sort({ time: -1 }).limit(10).toArray(function (err, results) {
+      //console.log(results);
+      start_sending_msgs(results, author, 'MESS_TO_USER', io)
+     
+  
+    });
+    
   }).then(() => client.close());
+  });
+}
+
+function start_sending_msgs(results, author, to_whom, io)
+{
+  results.reverse();
+  results.forEach(element => {
+      try {
+        io.sockets["in"](author).emit(to_whom, {
+          message: element.msg+":"+element.request, 
+            });
+      } 
+      catch (error) {}
   });
 }

@@ -1,7 +1,7 @@
-var usernames = {}; //массив с именами пользователей
-var rooms = []; //массив  с комнатами, по умолчанию при входе в приложение будет кидать в Лобби
-var roomsHistory = []//первый элемент с именем комнаты, второй = архив сообщений. История сообщений по сути
-var usersInfo = [];
+var usernames = 			{}; //массив с именами пользователей
+var rooms = 				[]; //массив  с комнатами, по умолчанию при входе в приложение будет кидать в Лобби
+var roomsHistory = 			[]//первый элемент с именем комнаты, второй = архив сообщений. История сообщений по сути
+var usersInfo = 			[];
 const messages_functions = 	require("./messages.js"); 
 
 // const io  = mainjs.io;
@@ -44,8 +44,6 @@ exports.createRoom = function(socket)
 	});
 }
 
-
-
 exports.addUser = function(socket, io)
 {
     socket.on('ADD_USER', function(username,userInfo) {
@@ -59,7 +57,7 @@ exports.addUser = function(socket, io)
         socket.broadcast.to(socket.room).emit('TECH-MESSEGE', 'server ',socket.username + ' has connected to this room');//отправка сообщения юзерам данной комнаты о новом сочатчанине
         socket.emit('UPDATE_ROOMS', rooms, username);
         console.log( username + " подключился к " + socket.room +" room" );//сообщение о подключении юзера в консоль
-        getUserInfo(username, userInfo, io); //отправляет объект userInfo на хранение на сервер
+        getUserInfo(username, userInfo,socket, io); //отправляет объект userInfo на хранение на сервер
         });
 }
 exports.toServerMess = function(socket, io)
@@ -73,8 +71,33 @@ exports.toServerMess = function(socket, io)
 		rooms.unshift(data.current_room); //ставит комнату в самый верх списка комнат
 		}
 		io.sockets.emit('UPDATE_ROOMS', rooms, undefined);
-		console.log(data.current_room + " "+ data.role + " "+ data.author + " "+ data.message + " "+ data.request + " "+ data.time)
-		messages_functions.addMessageToHistory(data.current_room, data.role, data.author, data.message, data.request,data.time);//добавит сообщение в историю
+		console.log(data.current_room + " "+ data.role + " "+ data.author + " "+ data.message + " "+ data.request + " "+ data.time);
+		if(data.current_room===data.author)
+		{
+		messages_functions.addMessageToHistory(
+			data.current_room,
+			data.role, 
+			data.author, 
+			data.message, 
+			data.request,
+			data.time,
+			'Оператор'
+			);//добавит сообщение в историю
+			console.log('srabotalo guest' + data.role);
+		}
+		else
+		{
+		messages_functions.addMessageToHistory(
+			data.current_room, 
+			data.role, 
+			data.author, 
+			data.message, 
+			data.request,
+			data.time,
+			data.current_room
+			);//добавит сообщение в историю
+			console.log('srabotalo admin' + data.role);
+		}
 		io.sockets["in"](data.current_room).emit('TO_CHAT_MESS', {
 			role: data.role, 
 			author: data.author, 
@@ -120,7 +143,7 @@ function switchRoomByServer (socket, newroom)
 	socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
 	socket.emit('UPDATE_ROOMS', rooms, socket.room);
 }
-function getUserInfo(username, userInfo, io)
+function getUserInfo(username, userInfo, socket, io)
 {
     let	match = searchStringInArray(username, usersInfo); //поиск совпадений имен в информации о клиентов
 		if(match) //если нет совпадения - добавить клиента в список информации о нем
