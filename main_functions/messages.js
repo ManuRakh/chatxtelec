@@ -5,22 +5,21 @@ const MongoDb = 	require("../mongodb/mongodb.js"); //проверка подкл
 url = MongoDb.getConnectionUrl(url);//получение url
 const mongoClient = new MongoClient(url,{useUnifiedTopology: true, useNewUrlParser: true}); //соединение с MongoDb и создание переменной для дальнейших действий с БД
 console.log(url);
-exports.showMessagesHistory = function(socket, author, io)
+exports.show_mess_to_admin = function(socket, author, io)
 {
     // rooms_functions.roomsHistory[socket.room].forEach(element => { //получить массив сообщений от юзера в данной комнате  
 	// 	io.sockets["in"](socket.room).emit('MESS_FROM_HISTORY', {
 	// 		message: element, 
 	// 	});
 	// });
-	MongoDb.showUserHistory(mongoClient, author, io, socket);
-	
+	MongoDb.show_mess_to_admin(mongoClient, author, io, socket);
 }
-
+exports.show_mess_to_user = function(socket, author, io)
+{
+	MongoDb.show_mess_to_user(mongoClient, author, io, socket);
+}
 exports.addMessageToHistory = function(current_room, role, author, message, request, time)
 {
     MongoDb.addMessageToDb(mongoClient, current_room, role, author, message,request,time);//добавляем запись в бд
 
 }
-
-
-

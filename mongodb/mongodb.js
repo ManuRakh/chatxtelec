@@ -74,7 +74,7 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
   });
 }
 //===========================Конец добавления сообщения в БД========================================
-exports.showUserHistory = function(mongoClient, author, io, socket)
+exports.show_mess_to_admin = function(mongoClient, author, io, socket)
 {
   mongoClient.connect(function (err, client) {
     new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
@@ -89,7 +89,29 @@ exports.showUserHistory = function(mongoClient, author, io, socket)
   //    socket.broadcast.to(author).emit('MESS_FROM_HISTORY', {
   //     message: results.msg, 
   //  });
-   io.sockets["in"](author).emit('MESS_FROM_HISTORY', {
+   io.sockets["in"](author).emit('MESS_TO_ADMIN', {
+    message: results.msg, 
+      });
+    }));
+  }).then(() => client.close());
+  });
+}
+exports.show_mess_to_user = function(mongoClient, author, io, socket)
+{
+  mongoClient.connect(function (err, client) {
+    new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
+
+    const db = client.db(dbName);
+    const collection = db.collection("users");
+    if (err)
+      return console.log(err);
+      collection.findOne({author: author},(function (err, results) {
+      console.log(results);
+   
+  //    socket.broadcast.to(author).emit('MESS_FROM_HISTORY', {
+  //     message: results.msg, 
+  //  });
+   io.sockets["in"](author).emit('MESS_TO_USER', {
     message: results.msg, 
       });
     }));

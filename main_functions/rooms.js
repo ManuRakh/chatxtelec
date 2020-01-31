@@ -24,7 +24,7 @@ exports.switchRoom = function(socket, io)
         socket.room = newroom;
         socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
         socket.emit('UPDATE_ROOMS', rooms, newroom);
-        messages_functions.showMessagesHistory(socket, newroom, io);//показывает историю сообщений
+        messages_functions.show_mess_to_admin(socket, newroom, io);//показывает историю сообщений
         socket.emit('USER-INFO',...usersInfo[newroom]);
         });
 }
@@ -59,7 +59,7 @@ exports.addUser = function(socket, io)
         socket.broadcast.to(socket.room).emit('TECH-MESSEGE', 'server ',socket.username + ' has connected to this room');//отправка сообщения юзерам данной комнаты о новом сочатчанине
         socket.emit('UPDATE_ROOMS', rooms, username);
         console.log( username + " подключился к " + socket.room +" room" );//сообщение о подключении юзера в консоль
-        getUserInfo(username, userInfo); //отправляет объект userInfo на хранение на сервер
+        getUserInfo(username, userInfo, io); //отправляет объект userInfo на хранение на сервер
         });
 }
 exports.toServerMess = function(socket, io)
@@ -120,12 +120,14 @@ function switchRoomByServer (socket, newroom)
 	socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
 	socket.emit('UPDATE_ROOMS', rooms, socket.room);
 }
-function getUserInfo(username, userInfo)
+function getUserInfo(username, userInfo, io)
 {
     let	match = searchStringInArray(username, usersInfo); //поиск совпадений имен в информации о клиентов
 		if(match) //если нет совпадения - добавить клиента в список информации о нем
 			{
 				console.log("Information is already exist");
+				messages_functions.show_mess_to_user(socket, username, io);//показывает историю сообщений
+
 			}
 			else
 		{
