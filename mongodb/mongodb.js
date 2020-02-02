@@ -1,9 +1,9 @@
  //===========================Входные данные========================================
- const user = "db33ee0f23395f4a844c799146bb9a82";
- const dbName = "db33ee0f23395f4a844c799146bb9a82";
- const hostString = "9a.mongo.evennode.com:27017/db33ee0f23395f4a844c799146bb9a82";
- const mongoPassword = "Otdyhaem123";
- const replica = "?replicaSet=eu-9";
+ const user =           "db33ee0f23395f4a844c799146bb9a82";
+ const dbName =         "db33ee0f23395f4a844c799146bb9a82";
+ const hostString =     "9a.mongo.evennode.com:27017/db33ee0f23395f4a844c799146bb9a82";
+ const mongoPassword =  "Otdyhaem123";
+ const replica =        "?replicaSet=eu-9";
  //===========================Конец входных данных========================================
 
  
@@ -16,61 +16,104 @@ exports.getConnectionUrl = function(url) {
 //===========================Конец получения рабочего Url========================================
 
 
-//===========================Показать таблицу пользователей полностью========================================
-exports.showUsersTable = function(mongoClient) {
-  mongoClient.connect(function (err, client) {
-    const db = client.db(dbName);
-    const collection = db.collection("users");
-    if (err)
-      return console.log(err);
-    collection.find().toArray(function (err, results) {
-      console.log(results);
-      client.close();
-    });
-  });
-}
+
 //===========================Конец получения таблицы========================================
 
 
 //===========================Добавление сообщения в БД========================================
-exports.addMessageToDb = function(mongoClient, current_room, role, author, message,request,time)
+exports.addMessageToDb = function(mongoClient, current_room, role, author, message,request,time, operator)
 {
+
     mongoClient.connect(function (err, client) { //соединение с бд
     new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
         const db = client.db(dbName);
         const collection = db.collection("users");
         let msgHistory = { //массив с данными о сообщении
           role:     role, 
-          author:   author, 
-          msg:      author+":"+ message, 
+          author:   current_room, 
+          to_whom:  operator,
+          msg:      message, 
           request:  request, 
           time:     time     
         };
-    collection.findOne({author: current_room},(function(err, results){       //ищет пользователя в БД по имени комнаты
-          console.log(results);
-          if(results=='' || results==null) //если записей не обнаружено - добавляет новую запись
-            {
-                console.log('Записей не обнаружено, создаю новую запись');
-                collection.insertOne(msgHistory);//добавление записи
-            }     
-          else //если же записи обнаружены - обновляет историю сообщений добавлением нового в конец истории
-            { 
-                console.log('Запись обнаружена, провожу обновление');
-                let endMessage =  results.msg + '\n' + message; //добавляет новую запись в конец старой
-                collection.updateOne({ author: current_room }, { $set: { msg: endMessage } }, (err, result) => { //обновляет запись
-                if (err) {
-                  console.log('Не получилось обновить запись: ', err)
-                  throw err
-                }
-                console.log('Запись обновлена');
-                console.log('Обновленная запись теперь выглядит так:');
-                console.log(endMessage);
-                console.log('Обновление завершено')
-      
-              });
-            }
-          }));
+        collection.insertOne(msgHistory);//добавление записи
+        console.log('Добавлено новое сообщение в бд')
     }).then(() => client.close());;
   });
 }
 //===========================Конец добавления сообщения в БД========================================
+
+//===========================Модуль для показа истории сообщения Администратору========================================
+exports.show_mess_to_admin = function(mongoClient, author, io, socket)
+{
+  mongoClient.connect(function (err, client) {
+    new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
+
+    const db = client.db(dbName);
+    const collection = db.collection("users");
+    if (err)
+      return console.log(err);
+      collection.find({$or:[
+        {author:author},
+        {to_whom:author}
+         ]}).sort({ time: -1 })
+            .toArray(function (err, results) {
+                start_sending_msgs(results, author, 'MESS_TO_ADMIN', io);
+
+               });
+      }).then(() => client.close());
+    });
+}
+//===========================Конец модуля=======================================================================
+
+//===========================Модуль для показа истории сообщения клиенту========================================
+
+exports.show_mess_to_user = function(mongoClient, author, io, socket) //отправляет сообщения пользователям админу и клиенту
+{
+  mongoClient.connect(function (err, client) {
+      new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
+        let msgs = [];
+      const db = client.db(dbName);
+      const collection = db.collection("users");
+      if (err)
+        return console.log(err);
+
+          collection.find({$or:[ //ищет если автор является автором письма или автор является получателем письма
+            {author:author},
+            {to_whom:author}
+          ]}).sort({ time: -1 })//сортирует в обратном порядке сообщения, ставить 1 если в прямом порядке
+            .limit(10)          //ограничение на вывод сообщений
+            .toArray(function (err, results) {
+                start_sending_msgs(results, author, 'MESS_TO_USER', io); //отправляет сообщение пользователю
+            });
+      
+      }).then(() => client.close()); //выполняем закрытие промиса
+  });
+}
+//===========================Конец модуля========================================
+
+
+//===========================Функция для показа истории сообщения========================================
+function start_sending_msgs(results, author, to_whom, io)
+{
+  massOfMsgs = [];
+  try {
+    results.reverse(); //переворачивает полученный массив данных, было 5 4 3 2 1 стало  1 2 3 4 5
+
+  } catch (error) {
+    console.log('Текст ошибки');
+    console.log(error);
+  }
+  try{
+  results.forEach(element => { //добавление результатов в массив сообщений
+     massOfMsgs.push(element);
+  });
+}
+catch{}
+try {
+  io.sockets["in"](author).emit(to_whom, massOfMsgs);//отправить сообщение в комнату
+} 
+catch (error) {}
+}
+//===========================Конец функции========================================
+
