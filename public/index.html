@@ -240,7 +240,7 @@ font-size: 12px;
       socket = io.connect();
 
      // var author = prompt("What's your name: ","New User") ;
-      var author = "manu2";
+      var author = "manu5";
       if (author) {} else{ author = 'Admin'}
 
       var currentRoom = author;
@@ -252,9 +252,9 @@ font-size: 12px;
       //вызов событий при подключении 
       socket.emit('ADD_USER', author, userInfo);  //добавить имя и информацию о юзере
       });
-      socket.on('MESS_TO_USER', function(msg)
+      socket.on('MESS_TO_USER', function(result)
       {
-        console.log(msg.message);
+        console.log(result);
       })
 function repeat(data) {
 $(' .entry__request').val(data)}
@@ -307,7 +307,7 @@ $(' .entry__request').val(data)}
        		if ( $(' .entry__response').val() ) 
        				{socket.emit('TO_SERVER_MESS', 
        				{
-		              role:' guest' ,
+		              role:'guest' ,
 		              author: author,
 		              message:$(' .entry__response').val(),
 		              request:$(' .entry__request').val(),

@@ -44,7 +44,7 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
           role:     role, 
           author:   author, 
           to_whom:  operator,
-          msg:      author+":"+ message, 
+          msg:      author, 
           request:  request, 
           time:     time     
         };
@@ -63,46 +63,58 @@ exports.show_mess_to_admin = function(mongoClient, author, io, socket)
     const collection = db.collection("users");
     if (err)
       return console.log(err);
-      collection.find({$or:[{author:author},{to_whom:author}]}, ).sort({ time: -1 }).toArray(function (err, results) {
-        //console.log(results);
-        start_sending_msgs(results, author, 'MESS_TO_ADMIN', io)
+      collection.find({$or:[
+        {author:author},
+        {to_whom:author}
+         ]}).sort({ time: -1 })
+            .toArray(function (err, results) {
+                start_sending_msgs(results, author, 'MESS_TO_ADMIN', io);
 
-       
-    
-      });
-  }).then(() => client.close());
-  });
+               });
+      }).then(() => client.close());
+    });
 }
 exports.show_mess_to_user = function(mongoClient, author, io, socket)
 {
   mongoClient.connect(function (err, client) {
-    new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
-      let msgs = [];
-    const db = client.db(dbName);
-    const collection = db.collection("users");
-    if (err)
-      return console.log(err);
+      new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
+        let msgs = [];
+      const db = client.db(dbName);
+      const collection = db.collection("users");
+      if (err)
+        return console.log(err);
 
-      collection.find({$or:[{author:author},{to_whom:author}]}, ).sort({ time: -1 }).limit(10).toArray(function (err, results) {
-      //console.log(results);
-      start_sending_msgs(results, author, 'MESS_TO_USER', io)
-     
-  
-    });
-    
-  }).then(() => client.close());
+          collection.find({$or:[
+            {author:author},
+            {to_whom:author}
+          ]}).sort({ time: -1 })
+            .limit(10)
+            .toArray(function (err, results) {
+                start_sending_msgs(results, author, 'MESS_TO_USER', io);
+            });
+      
+      }).then(() => client.close());
   });
 }
 
 function start_sending_msgs(results, author, to_whom, io)
 {
-  results.reverse();
+  massOfMsgs = [];
+  try {
+    results.reverse();
+
+  } catch (error) {
+    console.log('Текст ошибки');
+    console.log(error);
+  }
+  try{
   results.forEach(element => {
-      try {
-        io.sockets["in"](author).emit(to_whom, {
-          message: element.msg+":"+element.request, 
-            });
-      } 
-      catch (error) {}
+     massOfMsgs.push(element);
   });
+}
+catch{}
+try {
+  io.sockets["in"](author).emit(to_whom, massOfMsgs);
+} 
+catch (error) {}
 }

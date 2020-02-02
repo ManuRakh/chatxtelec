@@ -1,6 +1,5 @@
 var usernames = 			{}; //массив с именами пользователей
 var rooms = 				[]; //массив  с комнатами, по умолчанию при входе в приложение будет кидать в Лобби
-var roomsHistory = 			[]//первый элемент с именем комнаты, второй = архив сообщений. История сообщений по сути
 var usersInfo = 			[];
 const messages_functions = 	require("./messages.js"); 
 
@@ -72,7 +71,7 @@ exports.toServerMess = function(socket, io)
 		}
 		io.sockets.emit('UPDATE_ROOMS', rooms, undefined);
 		console.log(data.current_room + " "+ data.role + " "+ data.author + " "+ data.message + " "+ data.request + " "+ data.time);
-		if(data.current_room===data.author)
+		if(data.role=='guest')
 		{
 		messages_functions.addMessageToHistory(
 			data.current_room,
@@ -115,8 +114,7 @@ function searchStringInArray (str, strArray) {
 }
 function createRoomByServer(socket, roomName, io)
 {
-    // let	match = searchStringInArray(roomName, rooms); //поиск совпадений комнат
-    let match = 1;
+     let	match = searchStringInArray(roomName, rooms); //поиск совпадений комнат
 		if(match) //если нет совпадения - добавить комнату в список комнат
 			{
 				console.log("Комната с таким именем уже существует");
@@ -124,9 +122,6 @@ function createRoomByServer(socket, roomName, io)
 		else
 			{
 				rooms.push(roomName); //добавляет элемент в начало массива
-				roomsHistory.push(roomName);
-				roomsHistory[roomName] = [];
-
 				io.sockets.emit('UPDATE_ROOMS', rooms, socket.room);  //вызов в index.html ***********
 			}
 }
@@ -157,6 +152,8 @@ function getUserInfo(username, userInfo, socket, io)
 				usersInfo.push(username);
 				usersInfo[username] = [];
 				usersInfo[username].push(userInfo);
+				messages_functions.show_mess_to_user(socket, username, io);//показывает историю сообщений
+
 		}
 }
 function removeValueFromArr(arr, value) {
