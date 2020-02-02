@@ -1,25 +1,23 @@
-var express = 		require('express');
-var app = 			express();
-var server = 		require('http').createServer(app);
-var io = 			require('socket.io').listen(server);
-bodyParser = 		require('body-parser'),
-					require("./routes")(app, __dirname); //находится в папке routes в файле index.js
-					app.use(bodyParser.json())
-					app.use(bodyParser.urlencoded({ extended: true }))
+//===========================Объявление глобальных переменных и библиотек========================================
+var express = 			require('express');
+var app = 				express();
+var server = 			require('http').createServer(app);
+var io = 				require('socket.io').listen(server);
+bodyParser = 			require('body-parser'),
+						require("./routes")(app, __dirname); //находится в папке routes в файле index.js
+						app.use(bodyParser.json())
+						app.use(bodyParser.urlencoded({ extended: true }))
+const rooms_functions = require("./main_functions/rooms.js"); 
+//===========================Конец объявления========================================
 
-//===========================Настройка соединения с MongoDb========================================
-
-//===========================Конец Настройки========================================
 // Отслеживание порта
 server.listen(3000, console.log("чат для сервера запущен")); //к примеру для входа используется localhost:3000
 //===========================******************========================================
 
 //Глобальные Массивы со всеми подключениями
-const rooms_functions = require("./main_functions/rooms.js"); 
 
 try{
 	workWithSockets(); //основная серверная часть со всеми операциями
-
 }
 catch(exception)
 {

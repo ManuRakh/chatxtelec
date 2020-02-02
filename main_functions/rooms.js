@@ -3,12 +3,14 @@ var rooms = 				[]; //массив  с комнатами, по умолчани
 var usersInfo = 			[];
 const messages_functions = 	require("./messages.js"); 
 
-// const io  = mainjs.io;
-exports.disconnect=  function(socket)
+//===========================отсоединяет пользователя от сети========================================
+exports.disconnect=  function(socket) //
 {
     socket.on('disconnect', function(data) {
 	});
 }
+
+//===========================Модуль Меняет комнату========================================
 exports.switchRoom = function(socket, io)
 {
     socket.on('SWITCH_ROOM', function(newroom) { //функция для изменения текущей комнаты
@@ -23,18 +25,22 @@ exports.switchRoom = function(socket, io)
         socket.room = newroom;
         socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
         socket.emit('UPDATE_ROOMS', rooms, newroom);
-        messages_functions.show_mess_to_admin(socket, newroom, io);//показывает историю сообщений
+        messages_functions.show_mess_to_admin(socket, newroom, io);//показывает историю сообщений админу(Оператору)
         socket.emit('USER-INFO',...usersInfo[newroom]);
         });
 }
+
+//===========================Модуль Удаляет комнату========================================
 exports.deleteRoom = function(socket)
 {
     socket.on("DETELE_ROOM", function(room) {
 		messages_functions.removeValueFromArr(rooms, room);
-		io.sockets.emit('UPDATE_ROOMS', rooms, socket.room);  //вызов в index.html
+		io.sockets.emit('UPDATE_ROOMS', rooms, socket.room);  //обновляет комнаты после удаления оной
 		socket.emit('CLEAN_CHAT');
 	});
 }
+
+//===========================Модуль Создает комнату========================================
 exports.createRoom = function(socket)
 {
     socket.on('CREATE_ROOM', function(room) { //функция для создания комнаты
@@ -42,6 +48,8 @@ exports.createRoom = function(socket)
 		io.sockets.emit('UPDATE_ROOMS', rooms, socket.room);  //вызов в index.html
 	});
 }
+
+//===========================Модуль добавляет пользователя в сеть========================================
 
 exports.addUser = function(socket, io)
 {
@@ -51,14 +59,14 @@ exports.addUser = function(socket, io)
         createRoomByServer(socket,username, io);
         switchRoomByServer(socket, username);
         usernames[username] = username;
-        //socket.join('lobby'); //по умолчанию подключается к комнате Lobby
-        //socket.emit('TECH-MESSEGE', 'server', 'you <b>' + username +'</b> have connected to chat');  //отправка сообщения об успешном подключении к чату
         socket.broadcast.to(socket.room).emit('TECH-MESSEGE', 'server ',socket.username + ' has connected to this room');//отправка сообщения юзерам данной комнаты о новом сочатчанине
         socket.emit('UPDATE_ROOMS', rooms, username);
         console.log( username + " подключился к " + socket.room +" room" );//сообщение о подключении юзера в консоль
         getUserInfo(username, userInfo,socket, io); //отправляет объект userInfo на хранение на сервер
         });
 }
+
+//===========================Модуль отправки сообщения на сервер========================================
 exports.toServerMess = function(socket, io)
 {
     socket.on('TO_SERVER_MESS', function(data) { 
@@ -81,8 +89,7 @@ exports.toServerMess = function(socket, io)
 			data.request,
 			data.time,
 			'Оператор'
-			);//добавит сообщение в историю
-			console.log('srabotalo guest' + data.role);
+			);//добавит сообщение в историю пользователя в бд адрессованное Оператору(Админу)
 		}
 		else
 		{
@@ -94,10 +101,9 @@ exports.toServerMess = function(socket, io)
 			data.request,
 			data.time,
 			data.current_room
-			);//добавит сообщение в историю
-			console.log('srabotalo admin' + data.role);
+			);//добавит сообщение в историю пользователя в бд адрессованное Клиенту 
 		}
-		io.sockets["in"](data.current_room).emit('TO_CHAT_MESS', {
+		io.sockets["in"](data.current_room).emit('TO_CHAT_MESS', { //отправка сообщения в чат
 			role: data.role, 
 			author: data.author, 
 			message: data.message, 
@@ -106,12 +112,9 @@ exports.toServerMess = function(socket, io)
 		});
 	});
 }
-function searchStringInArray (str, strArray) {
-    console.log(strArray);
-    console.log(str);
-    return strArray.find( (el)=> {return el === str} )
-    return 1;
-}
+
+//===========================Модуль создания комнаты во время входа пользователя========================================
+
 function createRoomByServer(socket, roomName, io)
 {
      let	match = searchStringInArray(roomName, rooms); //поиск совпадений комнат
@@ -125,6 +128,9 @@ function createRoomByServer(socket, roomName, io)
 				io.sockets.emit('UPDATE_ROOMS', rooms, socket.room);  //вызов в index.html ***********
 			}
 }
+
+//===========================Модуль изменения комнаты========================================
+
 function switchRoomByServer (socket, newroom)
 {
     var oldroom;
@@ -138,6 +144,9 @@ function switchRoomByServer (socket, newroom)
 	socket.broadcast.to(newroom).emit('TECH-MESSEGE', 'server ',socket.username + ' has joined this room');
 	socket.emit('UPDATE_ROOMS', rooms, socket.room);
 }
+
+//===========================Модуль извлечения информации о пользователе========================================
+
 function getUserInfo(username, userInfo, socket, io)
 {
     let	match = searchStringInArray(username, usersInfo); //поиск совпадений имен в информации о клиентов
@@ -156,6 +165,9 @@ function getUserInfo(username, userInfo, socket, io)
 
 		}
 }
+
+//===========================Функция удаления перменной из массива данных========================================
+
 function removeValueFromArr(arr, value) {
     for(var i = 0; i < arr.length; i++) {
         if(arr[i] === value) {
@@ -164,4 +176,12 @@ function removeValueFromArr(arr, value) {
         }
     }
     return arr;
+}
+
+//===========================Функция поиска вхождения строки  в массиве========================================
+function searchStringInArray (str, strArray) {
+    console.log(strArray);
+    console.log(str);
+    return strArray.find( (el)=> {return el === str} )
+    return 1;
 }

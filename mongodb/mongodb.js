@@ -16,19 +16,7 @@ exports.getConnectionUrl = function(url) {
 //===========================Конец получения рабочего Url========================================
 
 
-//===========================Показать таблицу пользователей полностью========================================
-exports.showUsersTable = function(mongoClient) {
-  mongoClient.connect(function (err, client) {
-    const db = client.db(dbName);
-    const collection = db.collection("users");
-    if (err)
-      return console.log(err);
-    collection.find().toArray(function (err, results) {
-      console.log(results);
-      client.close();
-    });
-  });
-}
+
 //===========================Конец получения таблицы========================================
 
 
@@ -42,9 +30,9 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
         const collection = db.collection("users");
         let msgHistory = { //массив с данными о сообщении
           role:     role, 
-          author:   author, 
+          author:   current_room, 
           to_whom:  operator,
-          msg:      author, 
+          msg:      message, 
           request:  request, 
           time:     time     
         };
@@ -54,6 +42,8 @@ exports.addMessageToDb = function(mongoClient, current_room, role, author, messa
   });
 }
 //===========================Конец добавления сообщения в БД========================================
+
+//===========================Модуль для показа истории сообщения Администратору========================================
 exports.show_mess_to_admin = function(mongoClient, author, io, socket)
 {
   mongoClient.connect(function (err, client) {
@@ -74,7 +64,11 @@ exports.show_mess_to_admin = function(mongoClient, author, io, socket)
       }).then(() => client.close());
     });
 }
-exports.show_mess_to_user = function(mongoClient, author, io, socket)
+//===========================Конец модуля=======================================================================
+
+//===========================Модуль для показа истории сообщения клиенту========================================
+
+exports.show_mess_to_user = function(mongoClient, author, io, socket) //отправляет сообщения пользователям админу и клиенту
 {
   mongoClient.connect(function (err, client) {
       new Promise((resolve, reject) => { //объявление обещания колбека, отвечает за точное закрытие соединения с БД после выполнения работы
@@ -84,37 +78,43 @@ exports.show_mess_to_user = function(mongoClient, author, io, socket)
       if (err)
         return console.log(err);
 
-          collection.find({$or:[
+          collection.find({$or:[ //ищет если автор является автором письма или автор является получателем письма
             {author:author},
             {to_whom:author}
-          ]}).sort({ time: -1 })
-            .limit(10)
+          ]}).sort({ time: -1 })//сортирует в обратном порядке сообщения, ставить 1 если в прямом порядке
+            .limit(10)          //ограничение на вывод сообщений
             .toArray(function (err, results) {
-                start_sending_msgs(results, author, 'MESS_TO_USER', io);
+                start_sending_msgs(results, author, 'MESS_TO_USER', io); //отправляет сообщение пользователю
             });
       
-      }).then(() => client.close());
+      }).then(() => client.close()); //выполняем закрытие промиса
   });
 }
+//===========================Конец модуля========================================
 
+
+//===========================Функция для показа истории сообщения========================================
 function start_sending_msgs(results, author, to_whom, io)
 {
   massOfMsgs = [];
   try {
-    results.reverse();
+    results.reverse(); //переворачивает полученный массив данных, было 5 4 3 2 1 стало  1 2 3 4 5
 
   } catch (error) {
     console.log('Текст ошибки');
     console.log(error);
   }
   try{
-  results.forEach(element => {
+  results.forEach(element => { //добавление результатов в массив сообщений
      massOfMsgs.push(element);
   });
 }
 catch{}
 try {
-  io.sockets["in"](author).emit(to_whom, massOfMsgs);
+  io.sockets["in"](author).emit(to_whom, massOfMsgs);//отправить сообщение в комнату
 } 
 catch (error) {}
+}
+//===========================Конец функции========================================
+
 }
